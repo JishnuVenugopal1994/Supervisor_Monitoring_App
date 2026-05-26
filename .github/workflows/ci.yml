@@ -1,11 +1,11 @@
-name: CI
+﻿name: CI
 
 on:
   push:
     branches: ["main"]
   pull_request:
     branches: ["main"]
-  workflow_dispatch: # allow manual trigger from GitHub Actions UI
+  workflow_dispatch:
 
 jobs:
   backend:
@@ -36,7 +36,7 @@ jobs:
           JWT_REFRESH_EXPIRES_IN: 7d
         run: npm test
 
-      - name: Build (TypeScript compile)
+      - name: Build
         working-directory: backend
         run: npm run build
 
@@ -59,7 +59,7 @@ jobs:
         working-directory: frontend
         run: npm ci
 
-      - name: Build (tsc + Vite)
+      - name: Build
         working-directory: frontend
         env:
           VITE_API_URL: http://localhost:4000
