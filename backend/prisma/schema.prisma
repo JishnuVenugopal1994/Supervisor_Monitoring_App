@@ -1,0 +1,119 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+enum WorkOrderStatus {
+  PENDING
+  IN_PROGRESS
+  COMPLETED
+  ON_HOLD
+}
+
+enum OperatorStatus {
+  AVAILABLE
+  ASSIGNED
+  ABSENT
+}
+
+enum MachineStatus {
+  AVAILABLE
+  RUNNING
+  MAINTENANCE
+}
+
+enum Role {
+  SUPERVISOR
+  VIEWER
+}
+
+model User {
+  id           String       @id @default(cuid())
+  username     String       @unique
+  passwordHash String
+  role         Role
+  allocations  Allocation[] @relation("CreatedBy")
+  createdAt    DateTime     @default(now())
+  updatedAt    DateTime     @updatedAt
+}
+
+model WorkOrder {
+  id             String          @id @default(cuid())
+  orderNumber    String          @unique
+  title          String
+  status         WorkOrderStatus @default(PENDING)
+  scheduledStart DateTime
+  scheduledEnd   DateTime
+  targetQty      Int
+  allocations    Allocation[]
+  createdAt      DateTime        @default(now())
+  updatedAt      DateTime        @updatedAt
+}
+
+model Operator {
+  id          String         @id @default(cuid())
+  employeeId  String         @unique
+  name        String
+  skills      String[]
+  status      OperatorStatus @default(AVAILABLE)
+  allocations Allocation[]
+  createdAt   DateTime       @default(now())
+  updatedAt   DateTime       @updatedAt
+}
+
+model Machine {
+  id          String        @id @default(cuid())
+  machineCode String        @unique
+  name        String
+  type        String
+  status      MachineStatus @default(AVAILABLE)
+  allocations Allocation[]
+  createdAt   DateTime      @default(now())
+  updatedAt   DateTime      @updatedAt
+}
+
+model Material {
+  id             String               @id @default(cuid())
+  sku            String               @unique
+  name           String
+  unitOfMeasure  String
+  quantityOnHand Float
+  allocations    AllocationMaterial[]
+  createdAt      DateTime             @default(now())
+  updatedAt      DateTime             @updatedAt
+}
+
+model Allocation {
+  id          String               @id @default(cuid())
+  workOrderId String
+  workOrder   WorkOrder            @relation(fields: [workOrderId], references: [id], onDelete: Restrict)
+  operatorId  String?
+  operator    Operator?            @relation(fields: [operatorId], references: [id], onDelete: Restrict)
+  machineId   String?
+  machine     Machine?             @relation(fields: [machineId], references: [id], onDelete: Restrict)
+  startTime   DateTime
+  endTime     DateTime
+  createdById String
+  createdBy   User                 @relation("CreatedBy", fields: [createdById], references: [id])
+  materials   AllocationMaterial[]
+  createdAt   DateTime             @default(now())
+  updatedAt   DateTime             @updatedAt
+
+  @@index([operatorId, startTime, endTime])
+  @@index([machineId, startTime, endTime])
+  @@index([workOrderId])
+}
+
+model AllocationMaterial {
+  allocationId     String
+  allocation       Allocation @relation(fields: [allocationId], references: [id], onDelete: Cascade)
+  materialId       String
+  material         Material   @relation(fields: [materialId], references: [id], onDelete: Restrict)
+  quantityRequired Float
+
+  @@id([allocationId, materialId])
+}

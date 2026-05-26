@@ -1,0 +1,36 @@
+# Dependencies
+node_modules/
+
+# Environment variables — never commit secrets; use .env.example as template
+.env
+.env.local
+.env.*.local
+
+# Build outputs
+dist/
+build/
+
+# Logs
+*.log
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+
+# TypeScript incremental build cache
+*.tsbuildinfo
+
+# OS artefacts
+.DS_Store
+Thumbs.db
+
+# VS Code personal settings (project-shared settings belong in .vscode/settings.json.example)
+.vscode/settings.json
+.vscode/*.code-workspace
+
+# Prisma generated client (regenerated via `prisma generate`)
+backend/src/generated/
+
+# E2E test artefacts
+e2e/test-results/
+e2e/playwright-report/
+e2e/auth/
