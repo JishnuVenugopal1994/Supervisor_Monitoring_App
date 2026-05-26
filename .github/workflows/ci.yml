@@ -8,7 +8,7 @@ on:
 
 jobs:
   backend:
-    name: Backend — Test & Build
+    name: Backend - Test and Build
     runs-on: ubuntu-latest
 
     steps:
@@ -40,7 +40,7 @@ jobs:
         run: npm run build
 
   frontend:
-    name: Frontend — Build
+    name: Frontend - Build
     runs-on: ubuntu-latest
 
     steps:
