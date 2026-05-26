@@ -1,7 +1,8 @@
 /**
  * TC-BOARD-SUP — Board Page for Supervisor role (17 tests)
  * Each test is self-contained: if it needs an existing allocation it creates one.
- * Tests 13 & 14 (conflict tests) each run reseedDB() in beforeEach.
+ * Tests 13 & 14 (conflict tests) clear allocations via API in beforeEach instead of
+ * a full reseedDB() — faster (~200 ms vs ~3 s) and sufficient for conflict isolation.
  */
 import { test, expect } from '@playwright/test';
 import { BoardPage } from '../pages/BoardPage';
@@ -11,6 +12,7 @@ import {
   getWorkOrders,
   createAllocationViaAPI,
   completeAllWorkOrders,
+  deleteAllAllocations,
 } from '../helpers/api';
 
 test.use({ storageState: 'auth/supervisor.json' });
@@ -83,7 +85,8 @@ test.describe('TC-BOARD-SUP — Board (Supervisor)', () => {
     // Clicking again should not create a second card
     const cardsBefore = await page.locator('[data-testid="allocation-card"]', { hasText: 'Alice Nguyen' }).count();
     await aliceRow.click();
-    await page.waitForTimeout(500);
+    // Wait for any network response rather than burning a fixed 500 ms
+    await expect(page.locator('[data-testid="allocation-card"]', { hasText: 'Alice Nguyen' })).toHaveCount(cardsBefore);
     const cardsAfter = await page.locator('[data-testid="allocation-card"]', { hasText: 'Alice Nguyen' }).count();
     expect(cardsAfter).toBe(cardsBefore);
   });
@@ -115,7 +118,8 @@ test.describe('TC-BOARD-SUP — Board (Supervisor)', () => {
     // Clicking should not create any card
     const cardsBefore = await page.locator('[data-testid="allocation-card"]').count();
     await cncRow.click();
-    await page.waitForTimeout(500);
+    // Poll instead of burning a fixed 500 ms
+    await expect(page.locator('[data-testid="allocation-card"]')).toHaveCount(cardsBefore);
     const cardsAfter = await page.locator('[data-testid="allocation-card"]').count();
     expect(cardsAfter).toBe(cardsBefore);
   });
@@ -238,8 +242,13 @@ test.describe('TC-BOARD-SUP — Board (Supervisor)', () => {
     await expect(card.locator('[title="Click to edit times"]')).toBeVisible();
   });
 
-  test.describe('TC-BOARD-SUP-13 & 14: Conflict detection (reseed per test)', () => {
-    test.beforeEach(() => reseedDB());
+  test.describe('TC-BOARD-SUP-13 & 14: Conflict detection (clear allocations per test)', () => {
+    test.beforeEach(async () => {
+      // Delete all allocations via API — faster than a full reseedDB() (~200 ms vs ~3 s).
+      // The service restores operator/machine statuses automatically on delete.
+      const token = await getSupervisorToken();
+      await deleteAllAllocations(token);
+    });
 
     test('TC-BOARD-SUP-13: Operator double-booking rejected (OPERATOR_CONFLICT)', async ({ page }) => {
       // WO-001 (now+1h→now+5h) and WO-002 (now-2h→now+3h) overlap — use Alice
@@ -300,7 +309,8 @@ test.describe('TC-BOARD-SUP — Board (Supervisor)', () => {
     const cardsBefore = await page.locator('[data-testid="allocation-card"]').count();
     // Click an available operator without selecting a WO first
     await page.locator('[data-testid="resource-operator"]', { hasText: 'Alice Nguyen' }).click();
-    await page.waitForTimeout(500);
+    // Poll instead of burning a fixed 500 ms
+    await expect(page.locator('[data-testid="allocation-card"]')).toHaveCount(cardsBefore);
 
     const cardsAfter = await page.locator('[data-testid="allocation-card"]').count();
     expect(cardsAfter).toBe(cardsBefore);

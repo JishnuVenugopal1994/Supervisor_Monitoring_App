@@ -67,6 +67,8 @@ export async function createAllocationViaAPI(
 /**
  * Transition all active work orders to COMPLETED via the API.
  * Used for TC-BOARD-SUP-16 precondition setup.
+ * Multi-step transitions (PENDING→IN_PROGRESS→COMPLETED) are kept sequential
+ * per WO but all WOs are processed in parallel.
  */
 export async function completeAllWorkOrders(token: string): Promise<void> {
   const wos = await getWorkOrders(token);
@@ -76,9 +78,29 @@ export async function completeAllWorkOrders(token: string): Promise<void> {
     ON_HOLD: ['IN_PROGRESS', 'COMPLETED'],
     COMPLETED: [],
   };
-  for (const wo of wos) {
-    for (const toStatus of transitions[wo.status] ?? []) {
-      await patchWorkOrderStatus(wo.id, toStatus, token);
-    }
-  }
+  await Promise.all(
+    wos.map(async (wo) => {
+      for (const toStatus of transitions[wo.status] ?? []) {
+        await patchWorkOrderStatus(wo.id, toStatus, token);
+      }
+    })
+  );
+}
+
+/**
+ * Delete all allocations via the API.
+ * Faster alternative to reseedDB() when only allocation state needs resetting;
+ * the service automatically restores operator/machine statuses on delete.
+ */
+export async function deleteAllAllocations(token: string): Promise<void> {
+  const ctx = await request.newContext({
+    baseURL: BASE_URL,
+    extraHTTPHeaders: { Authorization: `Bearer ${token}` },
+  });
+  const res = await ctx.get('/api/allocations');
+  const allocations = await res.json() as Array<{ id: string }>;
+  await Promise.all(
+    allocations.map((a) => ctx.delete(`/api/allocations/${a.id}`))
+  );
+  await ctx.dispose();
 }
