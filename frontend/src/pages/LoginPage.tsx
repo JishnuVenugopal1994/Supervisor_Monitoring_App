@@ -1,19 +1,35 @@
-import React, { useState } from 'react';
+import React, { useEffect, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useAuth } from '../hooks/useAuth';
-import { getErrorMessage } from '../services/api';
+import api, { getErrorMessage, setAccessToken } from '../services/api';
+import type { AuthUser } from '../types';
 
 export default function LoginPage() {
-  const { login, isAuthenticated } = useAuth();
+  const { login, isAuthenticated, setUser } = useAuth();
   const navigate = useNavigate();
   const [form, setForm] = useState({ username: '', password: '' });
   const [error, setError] = useState('');
   const [loading, setLoading] = useState(false);
 
-  if (isAuthenticated) {
-    navigate('/board', { replace: true });
-    return null;
-  }
+  // Attempt silent session restore on mount. If the user navigated to /login
+  // while a valid refreshToken cookie still exists (e.g. TC-AUTH-07), redirect
+  // to /board without showing the login form.
+  useEffect(() => {
+    if (isAuthenticated) {
+      navigate('/board', { replace: true });
+      return;
+    }
+    api
+      .post<{ accessToken: string; user: AuthUser }>('/api/auth/refresh')
+      .then(({ data }) => {
+        setAccessToken(data.accessToken);
+        setUser(data.user);
+        navigate('/board', { replace: true });
+      })
+      .catch(() => {
+        // No valid cookie — stay on login page
+      });
+  }, []); // eslint-disable-line react-hooks/exhaustive-deps
 
   const handleChange = (e: React.ChangeEvent<HTMLInputElement>) =>
     setForm((prev) => ({ ...prev, [e.target.name]: e.target.value }));

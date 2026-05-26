@@ -24,18 +24,22 @@ test.describe('TC-NAV-01: All nav links route to correct pages', () => {
   });
 });
 
-test.describe('TC-NAV-02: Header shows username and role badge', () => {
+test.describe('TC-NAV-02: Header shows username and role badge — supervisor', () => {
+  test.use({ storageState: 'auth/supervisor.json' });
+
   test('TC-NAV-02: supervisor badge', async ({ page }) => {
-    test.use({ storageState: 'auth/supervisor.json' });
     await page.goto('/board');
     await expect(page.locator('[data-testid="work-order-column"]').first()).toBeVisible({ timeout: 12000 });
     const header = page.locator('header');
     await expect(header).toContainText('supervisor');
     await expect(header).toContainText('SUPERVISOR');
   });
+});
+
+test.describe('TC-NAV-02: Header shows username and role badge — viewer', () => {
+  test.use({ storageState: 'auth/viewer.json' });
 
   test('TC-NAV-02: viewer badge', async ({ page }) => {
-    test.use({ storageState: 'auth/viewer.json' });
     await page.goto('/board');
     await expect(page.locator('[data-testid="work-order-column"]').first()).toBeVisible({ timeout: 12000 });
     const header = page.locator('header');

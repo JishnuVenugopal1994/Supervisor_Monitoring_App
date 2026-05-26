@@ -9,6 +9,7 @@ interface AllocationStore {
   updateAllocation: (id: string, patch: Partial<Allocation>) => void;
   removeAllocation: (id: string) => void;
   setLoading: (loading: boolean) => void;
+  reset: () => void;
 }
 
 export const useAllocationStore = create<AllocationStore>((set) => ({
@@ -30,4 +31,5 @@ export const useAllocationStore = create<AllocationStore>((set) => ({
     })),
   removeAllocation: (id) => set((s) => ({ allocations: s.allocations.filter((a) => a.id !== id) })),
   setLoading: (loading) => set({ isLoading: loading }),
+  reset: () => set({ allocations: [], isLoading: false }),
 }));

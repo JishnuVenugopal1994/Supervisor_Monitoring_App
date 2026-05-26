@@ -1,4 +1,7 @@
 import axios from 'axios';
+import { useAllocationStore } from '../store/allocationStore';
+import { useWorkOrderStore } from '../store/workOrderStore';
+import { useResourceStore } from '../store/resourceStore';
 
 // Access token stored in memory only — never localStorage
 let accessToken: string | null = null;
@@ -8,6 +11,12 @@ export const setAccessToken = (token: string | null) => {
 };
 
 export const getAccessToken = () => accessToken;
+
+function clearAllStores() {
+  useAllocationStore.getState().reset();
+  useWorkOrderStore.getState().reset();
+  useResourceStore.getState().reset();
+}
 
 const api = axios.create({
   baseURL: import.meta.env.VITE_API_URL as string,
@@ -26,7 +35,9 @@ api.interceptors.response.use(
   (response) => response,
   async (error) => {
     const original = error.config;
-    if (error.response?.status === 401 && !original._retry) {
+    // Never retry the refresh endpoint itself — avoid an infinite loop.
+    const isRefreshCall = original.url?.includes('/auth/refresh');
+    if (error.response?.status === 401 && !original._retry && !isRefreshCall) {
       original._retry = true;
       try {
         const { data } = await api.post<{ accessToken: string }>('/api/auth/refresh');
@@ -35,6 +46,7 @@ api.interceptors.response.use(
         return api(original);
       } catch {
         setAccessToken(null);
+        clearAllStores();
         window.location.href = '/login';
       }
     }

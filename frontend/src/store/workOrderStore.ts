@@ -9,6 +9,7 @@ interface WorkOrderStore {
   updateWorkOrder: (id: string, patch: Partial<WorkOrder>) => void;
   removeWorkOrder: (id: string) => void;
   setLoading: (loading: boolean) => void;
+  reset: () => void;
 }
 
 export const useWorkOrderStore = create<WorkOrderStore>((set) => ({
@@ -22,4 +23,5 @@ export const useWorkOrderStore = create<WorkOrderStore>((set) => ({
     })),
   removeWorkOrder: (id) => set((s) => ({ workOrders: s.workOrders.filter((w) => w.id !== id) })),
   setLoading: (loading) => set({ isLoading: loading }),
+  reset: () => set({ workOrders: [], isLoading: false }),
 }));

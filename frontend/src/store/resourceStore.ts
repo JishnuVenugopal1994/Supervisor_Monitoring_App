@@ -19,6 +19,7 @@ interface ResourceStore {
   removeMachine: (id: string) => void;
   removeMaterial: (id: string) => void;
   setLoading: (loading: boolean) => void;
+  reset: () => void;
 }
 
 export const useResourceStore = create<ResourceStore>((set) => ({
@@ -42,4 +43,5 @@ export const useResourceStore = create<ResourceStore>((set) => ({
   removeMachine: (id) => set((s) => ({ machines: s.machines.filter((m) => m.id !== id) })),
   removeMaterial: (id) => set((s) => ({ materials: s.materials.filter((m) => m.id !== id) })),
   setLoading: (loading) => set({ isLoading: loading }),
+  reset: () => set({ operators: [], machines: [], materials: [], isLoading: false }),
 }));
